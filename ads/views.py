@@ -31,7 +31,7 @@ class AdListView(ListAPIView):
         text=request.GET.get('text',None)
         if text:
             self.queryset = self.queryset.filter(
-                description__icontains = text
+                name__icontains = text
             )
 
         location=request.GET.get('location',None)
@@ -223,154 +223,27 @@ class CategoryDeleteView(DeleteView):
 
 
 
-class UserListView(ListView):
-    model = User
-    def get(self, request, *args, **kwargs):
-        super().get(request, *args, **kwargs)
-        data = []
-        paginator = Paginator(self.object_list, 10)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-        for i in page_obj:
-            a = Ad.objects.all().filter(author_id__id = i.id).count()
-            locations = []
-            for location in i.location_id.all():
-                locations.append(location.name)
-            data.append({
-                "id":i.id,
-                "first_name":i.first_name,
-                "last_name":i.last_name,
-                "username":i.username,
-                "password":i.password,
-                "role":i.role,
-                "age":i.age,
-                "locations":locations,
-                "total_ads":a
-            })
-        res = {
-            "items":data,
-            "total":paginator.count,
-            "num_pages":paginator.num_pages
-        }
-        return JsonResponse(res, safe=False, json_dumps_params={'ensure_ascii': False})
+class UserListView(ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = serializers.UserSerializer
 
-class UserDetailView(DetailView):
-    model = User
-    def get(self, request, *args, **kwargs):
-        super().get(request,*args,**kwargs)
-        data = []
-        obj = self.get_object()
-        locations = []
-        for location in obj.location_id.all():
-            locations.append(location.name)
-        data.append({
-                "id":obj.id,
-                "first_name":obj.first_name,
-                "last_name":obj.last_name,
-                "username":obj.username,
-                "password":obj.password,
-                "role":obj.role,
-                "age":obj.age,
-                "locations":locations
-            })
-        return JsonResponse(data, safe=False, json_dumps_params={'ensure_ascii': False})
+class UserDetailView(RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = serializers.UserSerializer
 
 @method_decorator(csrf_exempt, name="dispatch")
 class UserCreateView(CreateAPIView):
     queryset = User.objects.all()
     serializer_class = serializers.UserCreateSerializer
 
-    def post(self, request, *args, **kwargs):
-        super().post(request, *args, **kwargs)
-        data = json.loads(request.read())
-        user = User()
-        user.id = data["id"]
-        user.first_name = data["first_name"]
-        user.last_name = data["last_name"]
-        user.username = data["username"]
-        user.password = data["password"]
-        user.role = data["role"]
-        user.age = data["age"]
-        locations = []
-        for location in data["locations"]:
-            locations.append(Location.objects.get(name=location))
-        user.save()
-        user.location_id.set(locations)
-        user.save()
-
-        locs = []
-        for location in user.location_id.all():
-            locs.append(location.name)
-
-        res = []
-
-        res.append({
-                "id":user.id,
-                "first_name":user.first_name,
-                "last_name":user.last_name,
-                "username":user.username,
-                "password":user.password,
-                "role":user.role,
-                "age":user.age,
-                "locations":locs,
-            })
-        return JsonResponse(data, safe=False, json_dumps_params={'ensure_ascii': False})
-
+@method_decorator(csrf_exempt, name="dispatch")
+class UserUpdateView(UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = serializers.UserUpdateSerializer
 
 @method_decorator(csrf_exempt, name="dispatch")
-class UserUpdateView(UpdateView):
-    model = User
-    fields = ["id","first_name","last_name","username","password","role","age","location_id"]
-
-    def patch(self, request, *args, **kwargs):
-        super().post(request, *args, **kwargs)
-        data = json.loads(request.read())
-        user = User()
-        user.id = data["id"]
-        if data["first_name"]:
-            user.first_name = data["first_name"] 
-        if data["last_name"]:
-            user.last_name = data["last_name"]
-        if data["username"]:
-            user.username = data["username"]
-        if data["password"]:
-            user.password = data["password"]
-        if data["role"]:
-            user.role = data["role"]
-        if data["age"]:
-            user.age = data["age"]
-        if data["locations"]:
-            locations = []
-            for location in data["locations"]:
-                locations.append(Location.objects.get(name=location))
-            user.save()
-            user.location_id.set(locations)
-        user.save()
-
-        locs = []
-        for location in user.location_id.all():
-            locs.append(location.name)
-
-        res = []
-
-        res.append({
-                "id":user.id,
-                "first_name":user.first_name,
-                "last_name":user.last_name,
-                "username":user.username,
-                "password":user.password,
-                "role":user.role,
-                "age":user.age,
-                "locations":locs,
-            })
-        return JsonResponse(data, safe=False, json_dumps_params={'ensure_ascii': False})
-
-@method_decorator(csrf_exempt, name="dispatch")
-class UserDeleteView(DeleteView):
-    model = User
-    success_url = "/categories/"
-    def delete(self, request, *args, **kwargs):
-        super().delete(request, *args, **kwargs)
-        return JsonResponse({"status":"ok"}, status = 200)
+class UserDeleteView(DestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = serializers.UserDestroySerializer
 
 

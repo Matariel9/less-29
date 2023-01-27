@@ -38,7 +38,27 @@ class AdUpdateSerializer(serializers.ModelSerializer):
         ad.save()
         return ad
 
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= User
+        fields = '__all__'
 class UserCreateSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required = False)
+    
+    location_id = serializers.SlugRelatedField(
+        required = False,
+        many = True,
+        queryset = Location.objects.all(),
+        slug_field = "id"
+    )
+
+    class Meta:
+        model= User
+        fields = ["id","first_name","last_name","username","password","role","age","location_id"]
+
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required = False)
     
     locations = serializers.SlugRelatedField(
@@ -52,10 +72,8 @@ class UserCreateSerializer(serializers.ModelSerializer):
         model= User
         fields = '__all__'
 
-    def create(self, validated_data):
-        user = User.objects.create(**validated_data)
-        for location in self._locations:
-            loc_obj, _ = Location.objects.get_or_create(name= location)
-            user.location_id.add(loc_obj)
-        user.save()
-        return user
+    
+class UserDestroySerializer(serializers.ModelSerializer):
+    class Meta:
+        model= User
+        fields = '__all__'
